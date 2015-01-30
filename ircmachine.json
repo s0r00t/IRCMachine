@@ -1,10 +1,14 @@
 {
   "owner":"s0r00t",
+  "gh-token":"<token>",
   "nick":"IRCMachine",
   "server":"chat.freenode.net",
   "chans": {
     "#astron": {
       "gh-repo":"Astron/Astron"
+    },
+    "#knightos-ot": {
+      "gh-repo":"KnightOS/KnightOS"
     }
   }
 }

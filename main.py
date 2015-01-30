@@ -5,8 +5,18 @@ import sys
 from fncts import *
 
 class IRCMachine(irc.bot.SingleServerIRCBot):
-     def __init__(self, chans, nickname, server, port=6667):
+    def __init__(self, chans, nick, server, port=6667):
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], nick, nick)
+        self.chans = chans
+
+    def on_nicknameinuse(self, c, e):
+        stLog("WARN","Nick in use. Using temp one.")
+        c.nick(c.get_nickname() + "_")
+
+    def on_welcome(self, c, e):
+        stLog("INFO","Connected! Joining channels...")
+        for i in self.chans:
+            c.join(i)
 
 def main():
     GHApi = "https://api.github.com"
@@ -36,6 +46,9 @@ def main():
             sys.exit(1)
         else:
             stLog("INFO","\'"+i+"\' : "+cfgJson[i])
+
+    bot = IRCMachine(cfgJson["chans"], cfgJson["nick"], cfgJson["server"])
+    bot.start()
 
 if __name__ == "__main__":
     main()
