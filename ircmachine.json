@@ -1,3 +1,10 @@
 {
-  "owner":"s0r00t"
+  "owner":"s0r00t",
+  "nick":"IRCMachine",
+  "server":"chat.freenode.net",
+  "chans": {
+    "#astron": {
+      "gh-repo":"Astron/Astron"
+    }
+  }
 }
