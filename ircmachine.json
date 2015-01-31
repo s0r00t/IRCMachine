@@ -4,11 +4,8 @@
   "nick":"IRCMachine",
   "server":"chat.freenode.net",
   "chans": {
-    "#astron": {
-      "gh-repo":"Astron/Astron"
-    },
-    "#knightos-ot": {
-      "gh-repo":"KnightOS/KnightOS"
+    "#botwar": {
+      "gh-repo":"s0r00t/IRCMachine"
     }
   }
 }

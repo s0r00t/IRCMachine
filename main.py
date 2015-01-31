@@ -2,12 +2,33 @@ import irc.bot
 import json
 import requests
 import sys
-from fncts import *
+
+quiet = False
+
+class LogError(Exception):
+    pass
+
+def stLog(type, msg):
+    """
+    Logs information to OP via STDOUT.
+    INFO : Normal text
+    WARN : Problem
+    ERROR : Important problem but can be fixed
+    FATAL : Important problem but cannot be fixed
+    """
+
+    if type in ["INFO","WARN","ERROR","FATAL"] and not quiet:
+        print("["+type+"] "+msg)
+    elif type in ["INFO","WARN"] and quiet:pass
+    else:
+        raise LogError("Failed logging message '"+msg+"'.")
+
 
 class IRCMachine(irc.bot.SingleServerIRCBot):
-    def __init__(self, chans, nick, server, port=6667):
+    def __init__(self, chans, nick, server, cfgJson, port=6667):
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], nick, nick)
         self.chans = chans
+        self.cfgJson = cfgJson
 
     def on_nicknameinuse(self, c, e):
         stLog("WARN","Nick in use. Using temp one.")
@@ -17,12 +38,27 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
         stLog("INFO","Connected! Joining channels...")
         for i in self.chans:
             c.join(i)
+            stLog("INFO","Joined \'"+i+"\'.")
+        if self.cfgJson['gh-token']:
+            stLog("INFO","Using GitHub token to connect to the API...")
+            GHApiLog = requests.get('https://api.github.com/user', auth=(self.cfgJson['gh-token'], 'x-oauth-basic'))
+            if GHApiLog.status_code == 200:
+                stLog("INFO","Logged to GitHub API!")
+            else:
+                stLog("WARN","Failed to log into GitHub API. Perhaps the token is not working?")
+        else:
+            stLog("WARN","No GitHub token provided. There may be limitations when using GitHub API.")
 
 def main():
-    GHApi = "https://api.github.com"
-    GHRaw = "https://raw.githubusercontent.com"
-    #to gen token : https://github.com/settings/tokens/new
-    #use public_repo and gist
+    for i in sys.argv:
+        if i=="main.py":pass
+        if i == "-h":
+            print("IRCMachine help\n-h: Show this message\n-q: Quiet mode (no INFO or WARN)\n-c <file>: use <file> as config file")
+            sys.exit(1)
+        if i == "-q":
+            global quiet
+            quiet = True
+
     cfgJson = None
     while cfgJson is None:
         try:
@@ -31,13 +67,12 @@ def main():
                 cfgJson = json.load(file)
             stLog("INFO","Config parsed.")
         except IOError:
-            stLog("WARN","No config file found. Fetching latest one from repo...")
-            cfgReq = requests.get(GHRaw+"/s0r00t/IRCMachine/master/ircmachine.json")
+            stLog("ERROR","No config file found. Fetching latest one from repo...")
+            cfgReq = requests.get("https://raw.githubusercontent.com/s0r00t/IRCMachine/master/ircmachine.json")
             with open("ircmachine.json","w") as file:
                 file.write(cfgReq.text)
             stLog("INFO","Restarting config parse.")
 
-    stLog("INFO","IRCMachine started.")
     #TODO : this is the check for important fields. ADD MORE FIELDS
     for i in ["nick","server"]:
         if not i in cfgJson:
@@ -47,8 +82,8 @@ def main():
         else:
             stLog("INFO","\'"+i+"\' : "+cfgJson[i])
 
-    bot = IRCMachine(cfgJson["chans"], cfgJson["nick"], cfgJson["server"])
-    bot.start()
+    stLog("INFO","IRCMachine started.")
+    IRCMachine(cfgJson["chans"], cfgJson["nick"], cfgJson["server"],cfgJson).start()
 
 if __name__ == "__main__":
     main()

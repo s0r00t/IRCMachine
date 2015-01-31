@@ -10,8 +10,8 @@ After cloning, run those commands (you may need admin rights to run those) :
 
 ## Usage
 
-First, you must configure the bot via ircmachine.json.
-Check wiki for help.
+First, you must configure the bot via ircmachine.json. Check the wiki for help.
+If IRCMachine fails to find a config file, it will download the one currently in the repo; please note it's not recommended to use it (right now it's just mine :P).
 Then, run main.py with your favourite interpreter :
 >python main.py
 
