@@ -4,6 +4,7 @@ import requests
 import sys
 
 quiet = False
+cfgPath = "ircmachine.json"
 
 class LogError(Exception):
     pass
@@ -39,6 +40,7 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
         for i in self.chans:
             c.join(i)
             stLog("INFO","Joined \'"+i+"\'.")
+        #TODO : DO SOMETHING WITH THAT API
         if self.cfgJson['gh-token']:
             stLog("INFO","Using GitHub token to connect to the API...")
             GHApiLog = requests.get('https://api.github.com/user', auth=(self.cfgJson['gh-token'], 'x-oauth-basic'))
@@ -52,18 +54,20 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
 def main():
     for i in sys.argv:
         if i=="main.py":pass
-        if i == "-h":
+        elif i == "-h":
             print("IRCMachine help\n-h: Show this message\n-q: Quiet mode (no INFO or WARN)\n-c <file>: use <file> as config file")
             sys.exit(1)
-        if i == "-q":
+        elif i == "-q":
             global quiet
             quiet = True
+        elif i == "-c":
+            cfgPath = sys.argv[sys.argv.index(i)+1]
 
     cfgJson = None
     while cfgJson is None:
         try:
             stLog("INFO","Parsing config file...")
-            with open("ircmachine.json","r") as file:
+            with open(cfgPath,"r") as file:
                 cfgJson = json.load(file)
             stLog("INFO","Config parsed.")
         except IOError:
