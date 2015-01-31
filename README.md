@@ -4,6 +4,8 @@ IRCMachine is my own Python IRC bot made to help with development related channe
 This is a Python 2.7 version, although I could make a Py3 version.
 It's based on [requests](http://docs.python-requests.org/en/latest/) and [irc](https://bitbucket.org/jaraco/irc) libs.
 
+[Todo list is here.](https://github.com/s0r00t/IRCMachine/issues/1)
+
 ## Installation
 After cloning, run those commands (you may need admin rights to run those) :
 >pip install -r requirements.txt
