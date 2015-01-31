@@ -2,6 +2,7 @@ import irc.bot
 import json
 import requests
 import sys
+import os
 
 quiet = False
 cfgPath = "ircmachine.json"
@@ -61,7 +62,13 @@ def main():
             global quiet
             quiet = True
         elif i == "-c":
-            cfgPath = sys.argv[sys.argv.index(i)+1]
+            if not "ircmachine.json" in sys.argv[sys.argv.index(i)+1] and not os.path.isfile(sys.argv[sys.argv.index(i)+1]+"/ircmachine.json"):
+                print("FATAL : The specified config file does not exists.")
+                sys.exit(1)
+            elif os.path.isfile(sys.argv[sys.argv.index(i)+1]+"/ircmachine.json"):
+                cfgPath = sys.argv[sys.argv.index(i)+1]+"/ircmachine.json"
+            else:
+                cfgPath = sys.argv[sys.argv.index(i)+1]
 
     cfgJson = None
     while cfgJson is None:
@@ -75,6 +82,7 @@ def main():
             cfgReq = requests.get("https://raw.githubusercontent.com/s0r00t/IRCMachine/master/ircmachine.json")
             with open("ircmachine.json","w") as file:
                 file.write(cfgReq.text)
+            cfgPath = "ircmachine.json"
             stLog("INFO","Restarting config parse.")
 
     #TODO : this is the check for important fields. ADD MORE FIELDS
