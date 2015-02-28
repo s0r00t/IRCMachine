@@ -2,9 +2,10 @@
   "owner":"s0r00t",
   "gh-token":"<token>",
   "nick":"IRCMachine",
+  "cmd":":",
   "server":"chat.freenode.net",
   "chans": {
-    "#pootis": {
+    "#botwar": {
       "gh-repo":"s0r00t/IRCMachine"
     }
   }

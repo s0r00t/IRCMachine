@@ -8,3 +8,6 @@ pip-delete-this-directory.txt
 
 #Atom build script
 .atom-build.json
+
+#IRCMachine logs
+logs/*.log
