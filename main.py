@@ -1,9 +1,9 @@
-#! /usr/bin/env python
 import irc.bot
 import json
 import requests
 import sys
 import os
+import time
 
 quiet = False
 
@@ -19,11 +19,12 @@ def stLog(type, msg):
     """
 
     if type in ["INFO","WARN","ERROR","FATAL"] and not quiet:
-        print("["+type+"] "+msg)
+        with open("logs/"+time.strftime("%Y-%m-%d")+".log","a") as file:
+            file.write("\n"+time.strftime("%H:%M:%S")+": ["+type+"] "+msg)
+        print(time.strftime("%H:%M:%S")+": ["+type+"] "+msg)
     elif type in ["INFO","WARN"] and quiet:pass
     else:
         raise LogError("Failed logging message '"+msg+"'.")
-
 
 class IRCMachine(irc.bot.SingleServerIRCBot):
     def __init__(self, chans, nick, server, cfgJson, port=6667):
@@ -77,6 +78,7 @@ def main():
             print("IRCMachine help\n-h: Show this message\n-q: Quiet mode (no INFO or WARN)\n-c <file>: use <file> as config file\n-t <token>: use <token> as GitHub API token")
             sys.exit(1)
         elif i == "-q":
+            global quiet
             quiet = True
         elif i == "-c":
             if not "ircmachine.json" in sys.argv[sys.argv.index(i)+1] and not os.path.isfile(sys.argv[sys.argv.index(i)+1]+"/ircmachine.json"):
@@ -90,21 +92,14 @@ def main():
             global argToken
             argToken = sys.argv[sys.argv.index(i)+1]
 
-    cfgJson = None
-    while cfgJson == None:
-        try:
-            stLog("INFO","Parsing config file...")
-            with open(cfgPath,"r") as file:
-                cfgJson = json.load(file)
-            stLog("INFO","Config parsed.")
-        except IOError:
-            stLog("ERROR","No config file found. Fetching latest one from repo...")
-            cfgReq = requests.get("https://raw.githubusercontent.com/s0r00t/IRCMachine/master/ircmachine.json")
-            with open("ircmachine.json","w") as file:
-                file.write(cfgReq.text)
-            cfgPath = "ircmachine.json"
-            stLog("INFO","Restarting config parse.")
-
+    try:
+        stLog("INFO","Parsing config file...")
+        with open(cfgPath,"r") as file:
+            cfgJson = json.load(file)
+        stLog("INFO","Config parsed.")
+    except IOError:
+        stLog("FATAL","No config file in \'"+cfgPath+"\'.")
+        stLog("INFO","IRCMachine stopped.")
     #TODO : this is the check for important fields. ADD MORE FIELDS
     for i in ["nick","server"]:
         if not i in cfgJson:

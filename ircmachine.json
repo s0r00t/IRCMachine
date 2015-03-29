@@ -5,7 +5,7 @@
   "cmd":":",
   "server":"chat.freenode.net",
   "chans": {
-    "#botwar": {
+    "#pootis": {
       "gh-repo":"s0r00t/IRCMachine"
     }
   }
