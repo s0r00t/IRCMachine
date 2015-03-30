@@ -4,8 +4,10 @@ import requests
 import sys
 import os
 import time
+import importlib
 
 quiet = False
+cmds = {}
 
 class LogError(Exception):pass
 
@@ -45,8 +47,8 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
         #cmdArray[>0] : arg
         stLog("INFO","User '"+e.source.nick+"' sent command '"+cmdArray[0]+"'.")
         c = self.connection
-        if cmdArray[0] == "hello":
-            c.privmsg(e.target,"Hello World from "+e.source.nick+"!")
+        if cmds[cmdArray[0]]:
+           cmds[cmdArray[0]].command(c,e,cmdArray)
 
 
     def on_welcome(self, c, e):
@@ -108,6 +110,12 @@ def main():
             sys.exit(1)
         else:
             stLog("INFO","\'"+i+"\' : "+cfgJson[i])
+
+    for i in os.listdir("cmds"):
+        global cmds
+        if os.path.isfile(os.path.join("cmds",i)) and i.endswith(".py") and os.path.splitext(i)[0] != "__init__":
+            cmds[os.path.splitext(i)[0]] = importlib.import_module("cmds."+os.path.splitext(i)[0])
+            stLog("INFO","Imported command '"+os.path.splitext(i)[0]+"'")
 
     stLog("INFO","IRCMachine started.")
     try:
