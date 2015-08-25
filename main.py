@@ -1,6 +1,5 @@
 import irc.bot
 import json
-import requests
 import sys
 import os
 import time
@@ -21,6 +20,7 @@ def stLog(type, msg):
     """
 
     if type in ["INFO","WARN","ERROR","FATAL"] and not quiet:
+        if not os.path.exists("logs"): os.makedirs("logs")
         with open("logs/"+time.strftime("%Y-%m-%d")+".log","a") as file:
             file.write("\n"+time.strftime("%H:%M:%S")+": ["+type+"] "+msg)
         print(time.strftime("%H:%M:%S")+": ["+type+"] "+msg)
@@ -48,7 +48,7 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
         stLog("INFO","User '"+e.source.nick+"' sent command '"+cmdArray[0]+"'.")
         c = self.connection
         if cmds[cmdArray[0]]:
-           cmds[cmdArray[0]].command(c,e,cmdArray)
+           cmds[cmdArray[0]].command(c,e,cmdArray, self.cfgJson)
 
 
     def on_welcome(self, c, e):
@@ -56,20 +56,6 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
         for i in self.chans:
             c.join(i)
             stLog("INFO","Joined \'"+i+"\'.")
-        #TODO : DO SOMETHING WITH THAT API
-        if 'argToken' in globals():
-            stLog("INFO","Using GitHub token to connect to the API...")
-            GHApiLog = requests.get('https://api.github.com/user', auth=(argToken, 'x-oauth-basic'))
-        elif self.cfgJson['gh-token']:
-            stLog("INFO","Using GitHub token to connect to the API...")
-            GHApiLog = requests.get('https://api.github.com/user', auth=(self.cfgJson['gh-token'], 'x-oauth-basic'))
-        else:
-            stLog("WARN","No GitHub token provided. There may be limitations when using GitHub API.")
-
-        if GHApiLog.status_code == 200:
-            stLog("INFO","Logged to GitHub API!")
-        else:
-            stLog("WARN","Failed to log into GitHub API. Perhaps the token is not working?")
 
 def main():
     cfgPath = "ircmachine.json"
@@ -77,7 +63,7 @@ def main():
     for i in sys.argv[1:]:
         if i=="main.py":pass
         elif i == "-h":
-            print("IRCMachine help\n-h: Show this message\n-q: Quiet mode (no INFO or WARN)\n-c <file>: use <file> as config file\n-t <token>: use <token> as GitHub API token")
+            print("IRCMachine help\n-h: Show this message\n-q: Quiet mode (no INFO or WARN)\n-c <file>: use <file> as config file")
             sys.exit(1)
         elif i == "-q":
             global quiet
@@ -90,9 +76,6 @@ def main():
                 cfgPath = sys.argv[sys.argv.index(i)+1]+"/ircmachine.json"
             else:
                 cfgPath = sys.argv[sys.argv.index(i)+1]
-        elif i == "-t":
-            global argToken
-            argToken = sys.argv[sys.argv.index(i)+1]
 
     try:
         stLog("INFO","Parsing config file...")
@@ -102,7 +85,6 @@ def main():
     except IOError:
         stLog("FATAL","No config file in \'"+cfgPath+"\'.")
         stLog("INFO","IRCMachine stopped.")
-    #TODO : this is the check for important fields. ADD MORE FIELDS
     for i in ["nick","server"]:
         if not i in cfgJson:
             stLog("FATAL","No \'"+i+"\' field in the config file. IRCMachine cannot run without \'"+i+"\'   field defined.")

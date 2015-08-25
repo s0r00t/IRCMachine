@@ -5,8 +5,8 @@
   "cmd":":",
   "server":"chat.freenode.net",
   "chans": {
-    "#pootis": {
-      "gh-repo":"s0r00t/IRCMachine"
-    }
+      "#archlinux-fr": {
+          "gh-repo": "s0r00t/IRCMachine"
+      }
   }
 }
