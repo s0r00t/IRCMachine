@@ -35,21 +35,33 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
         self.cfgJson = cfgJson
 
     def on_nicknameinuse(self, c, e):
-        stLog("WARN","Nick in use. Using temp one.")
+        stLog("WARN","Nick in use. Using temporary one.")
         c.nick(c.get_nickname() + "_")
 
+    def on_privmsg(self, c, e):
+        self.runCmd(c, e, e.source.nick,True)
+
     def on_pubmsg(self, c, e):
+        self.runCmd(c, e, e.target,False)
+        
+    def runCmd(self, c, e, dest, isPriv):
         if e.arguments[0].startswith(self.cfgJson["cmd"]):
-            self.runCmd(e.arguments[0].split(self.cfgJson["cmd"],1)[1].split(' '),e)
-
-    def runCmd(self,cmdArray,e):
-        #cmdArray[0] : command
-        #cmdArray[>0] : arg
-        stLog("INFO","User '"+e.source.nick+"' sent command '"+cmdArray[0]+"'.")
-        c = self.connection
-        if cmds[cmdArray[0]]:
-           cmds[cmdArray[0]].command(c,e,cmdArray, self.cfgJson)
-
+            cmdArray = e.arguments[0].split(self.cfgJson["cmd"],1)[1].split(' ')
+            if not cmdArray[0] in cmds:
+                c.privmsg(dest, e.source.nick+": Command not found!")
+                return
+        
+            #cmdArray[0] : command
+            #cmdArray[>0] : arg
+            if isPriv:
+                stLog("INFO","User '"+e.source.nick+"' sent command '"+cmdArray[0]+"' in private.")
+            else:
+                stLog("INFO","User '"+e.source.nick+"' sent command '"+cmdArray[0]+"'.")
+            try:
+                cmds[cmdArray[0]].command(c,e,dest,cmdArray,isPriv)
+            except Exception as ex:
+                c.privmsg(dest, "Failed to run command, check output for more info")
+                stLog("ERROR","Command '"+cmdArray[0]+"' failed with error "+str(type(ex).__name__)+": "+str(ex))
 
     def on_welcome(self, c, e):
         stLog("INFO","Connected! Joining channels...")
@@ -96,16 +108,22 @@ def main():
     for i in os.listdir("cmds"):
         global cmds
         if os.path.isfile(os.path.join("cmds",i)) and i.endswith(".py") and os.path.splitext(i)[0] != "__init__":
-            cmds[os.path.splitext(i)[0]] = importlib.import_module("cmds."+os.path.splitext(i)[0])
-            stLog("INFO","Imported command '"+os.path.splitext(i)[0]+"'")
+            try:
+                cmds[os.path.splitext(i)[0]] = importlib.import_module("cmds."+os.path.splitext(i)[0])
+                stLog("INFO","Imported command '"+os.path.splitext(i)[0]+"'.")
+            except Exception as e:
+                stLog("ERROR","Importing command '"+os.path.splitext(i)[0]+"' failed with error "+str(type(e).__name__)+": "+str(e))
 
     stLog("INFO","IRCMachine started.")
     try:
         IRCMachine(cfgJson["chans"], cfgJson["nick"], cfgJson["server"],cfgJson).start()
     except UnicodeDecodeError:
         #TODO : find wtf is that error
-        #seems to be a problem with clients
         stLog("FATAL","Unknown error. Please restart IRCMachine.")
 
-if __name__ == "__main__":
-    main()
+try:
+    if __name__ == "__main__":
+        main()
+except KeyboardInterrupt: #^C
+    stLog("FATAL","Force shutdown by operator.")
+    

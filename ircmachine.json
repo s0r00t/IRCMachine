@@ -1,12 +1,10 @@
 {
-  "owner":"s0r00t",
-  "gh-token":"<token>",
-  "nick":"IRCMachine",
-  "cmd":":",
-  "server":"chat.freenode.net",
-  "chans": {
-      "#archlinux-fr": {
-          "gh-repo": "s0r00t/IRCMachine"
-      }
-  }
+    "owner": "s0r00t",
+    "gh-token": "<token>",
+    "nick": "IRCMachine",
+    "cmd": ":",
+    "server": "chat.freenode.net",
+    "chans": [
+        "#botwar"
+    ]
 }

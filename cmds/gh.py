@@ -3,7 +3,7 @@
 import requests
 from main import stLog
 
-def command(c,e,args,json):
+def command(c,e,s,args,iP):
     if json['gh-token']:
         stLog("INFO","Using GitHub token to connect to the API...")
         GHApiLog = requests.get('https://api.github.com/user', auth=(json['gh-token'], 'x-oauth-basic'))
