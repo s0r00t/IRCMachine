@@ -75,7 +75,7 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
             else:
                 stLog("INFO","User "+e.source.nick+" sent command '"+cmdArray[0]+"'.")
             try:
-                cmds[cmdArray[0]].command(c,e,dest,cmdArray,isPriv)
+                cmds[cmdArray.pop(0)].command(c,e,dest,cmdArray,isPriv)
             except Exception as ex:
                 c.privmsg(dest, "Failed to run command, check output for more info")
                 stLog("ERROR","Command '"+cmdArray[0]+"' failed with error "+str(type(ex).__name__)+": "+str(ex))

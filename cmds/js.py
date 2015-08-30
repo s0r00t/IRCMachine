@@ -4,7 +4,6 @@
 from jsmin import jsmin
 
 def command(c,e,s,args,iP):
-    args.pop(0)
     if "".join(args) == "":
         c.privmsg(s, e.source.nick+": No JS to minify!")
         return
