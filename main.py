@@ -7,6 +7,10 @@ import importlib
 
 quiet = False
 cmds = {}
+#json fields that must be filled, else bot won't start
+importantCFG = ["nick","server","cmd","chans"]
+#json fields that should be filled, but can have a default value (hence a dictionary)
+optionalCFG = {"autorejoin":True,"owner":"s0r00t"}
 
 class LogError(Exception):pass
 
@@ -34,6 +38,12 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
         self.chans = chans
         self.cfgJson = cfgJson
 
+    def on_welcome(self, c, e):
+        stLog("INFO","Connected!")
+        for i in self.chans:
+            c.join(i)
+            stLog("INFO","Joining \'"+i+"\'...")
+        
     def on_nicknameinuse(self, c, e):
         stLog("WARN","Nick in use. Using temporary one.")
         c.nick(c.get_nickname() + "_")
@@ -43,6 +53,13 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
 
     def on_pubmsg(self, c, e):
         self.runCmd(c, e, e.target,False)
+
+    def on_kick(self, c, e):
+        if e.arguments[0] == self.cfgJson["nick"]:
+            stLog("WARN","Kicked from '"+e.target+"' by "+e.source.nick+" with reason '"+e.arguments[1]+"'.")
+            if self.cfgJson["autorejoin"]:
+                stLog("INFO","Auto-rejoining '"+e.target+"'.")
+                c.join(e.target)
         
     def runCmd(self, c, e, dest, isPriv):
         if e.arguments[0].startswith(self.cfgJson["cmd"]):
@@ -54,21 +71,15 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
             #cmdArray[0] : command
             #cmdArray[>0] : arg
             if isPriv:
-                stLog("INFO","User '"+e.source.nick+"' sent command '"+cmdArray[0]+"' in private.")
+                stLog("INFO","User "+e.source.nick+" sent command '"+cmdArray[0]+"' in private.")
             else:
-                stLog("INFO","User '"+e.source.nick+"' sent command '"+cmdArray[0]+"'.")
+                stLog("INFO","User "+e.source.nick+" sent command '"+cmdArray[0]+"'.")
             try:
                 cmds[cmdArray[0]].command(c,e,dest,cmdArray,isPriv)
             except Exception as ex:
                 c.privmsg(dest, "Failed to run command, check output for more info")
                 stLog("ERROR","Command '"+cmdArray[0]+"' failed with error "+str(type(ex).__name__)+": "+str(ex))
-
-    def on_welcome(self, c, e):
-        stLog("INFO","Connected! Joining channels...")
-        for i in self.chans:
-            c.join(i)
-            stLog("INFO","Joined \'"+i+"\'.")
-
+                
 def main():
     cfgPath = "ircmachine.json"
     #TODO : MORE ARGUMENTS
@@ -95,16 +106,22 @@ def main():
             cfgJson = json.load(file)
         stLog("INFO","Config parsed.")
     except IOError:
-        stLog("FATAL","No config file in \'"+cfgPath+"\'.")
-        stLog("INFO","IRCMachine stopped.")
-    for i in ["nick","server"]:
+        stLog("FATAL","No config file in '"+cfgPath+"'. Aborting.")
+        
+    for i in importantCFG:
         if not i in cfgJson:
-            stLog("FATAL","No \'"+i+"\' field in the config file. IRCMachine cannot run without \'"+i+"\'   field defined.")
+            stLog("FATAL","No '"+i+"' field in the config file. IRCMachine cannot run without '"+i+"' field defined.")
             stLog("INFO","IRCMachine stopped.")
             sys.exit(1)
         else:
-            stLog("INFO","\'"+i+"\' : "+cfgJson[i])
+            if i != "chans": stLog("INFO","'"+i+"' : "+cfgJson[i])
 
+    for i in optionalCFG:
+        if not i in cfgJson:
+            stLog("WARN","No '"+i+"' field, using default value.")
+            cfgJson[i] = optionalCFG[i]
+        stLog("INFO","'"+i+"' : "+str(cfgJson[i]))
+            
     for i in os.listdir("cmds"):
         global cmds
         if os.path.isfile(os.path.join("cmds",i)) and i.endswith(".py") and os.path.splitext(i)[0] != "__init__":

@@ -1,8 +1,8 @@
 {
     "owner": "s0r00t",
-    "gh-token": "<token>",
     "nick": "IRCMachine",
     "cmd": ":",
+    "autorejoin": true,
     "server": "chat.freenode.net",
     "chans": [
         "#botwar"
