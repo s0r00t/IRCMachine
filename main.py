@@ -8,9 +8,9 @@ import importlib
 quiet = False
 cmds = {}
 #json fields that must be filled, else bot won't start
-importantCFG = ["nick","server","cmd","chans"]
+importantCFG = ["server","chans"]
 #json fields that should be filled, but can have a default value (hence a dictionary)
-optionalCFG = {"autorejoin":True,"owner":"s0r00t"}
+optionalCFG = {"nick":"IRCMachine","cmd":":","autorejoin":True,"owner":"s0r00t"}
 
 class LogError(Exception):pass
 
@@ -47,12 +47,22 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
     def on_nicknameinuse(self, c, e):
         stLog("WARN","Nick in use. Using temporary one.")
         c.nick(c.get_nickname() + "_")
-
+        
     def on_privmsg(self, c, e):
         self.runCmd(c, e, e.source.nick,True)
 
     def on_pubmsg(self, c, e):
         self.runCmd(c, e, e.target,False)
+
+    def runExit(self, c):
+        if not self.channels:
+            stLog("INFO","Connected to no channels. Exiting.")
+            stLog("INFO","IRCMachine stopped.")
+        else:
+            stLog("INFO","Leaving all channels.")
+            for i in self.channels: c.leave(i)
+            stLog("INFO","IRCMachine stopped.")
+        sys.exit(0)
 
     def on_kick(self, c, e):
         if e.arguments[0] == self.cfgJson["nick"]:
@@ -60,6 +70,25 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
             if self.cfgJson["autorejoin"]:
                 stLog("INFO","Auto-rejoining '"+e.target+"'.")
                 c.join(e.target)
+            else: self.runExit(c)            
+
+    def on_bannedfromchan(self, c, e):
+        stLog("ERROR","Banned from '"+e.arguments[0]+"', unable to join.")
+        if not self.channels:
+            self.cfgJson["chans"].remove(e.arguments[0])
+            if not self.cfgJson["chans"]:self.runExit(c)
+        
+    def on_mode(self, c, e):
+        if e.arguments[1] and e.arguments[1] == self.cfgJson["nick"]:
+            if self.cfgJson["nick"] in e.arguments[1]:
+                if e.arguments[0] == '+b':
+                    stLog("WARN","Ban applied by "+e.source.nick+".")
+                elif e.arguments[0] == '-b':
+                    stLog("INFO","Ban lifted by "+e.source.nick+".")
+                elif e.arguments[0] == '+o':
+                    stLog("INFO","Operator rights given by "+e.source.nick+".")
+                elif e.arguments[0] == '-o':
+                    stLog("WARN","Operator rights removed by "+e.source.nick+".")  
         
     def runCmd(self, c, e, dest, isPriv):
         if e.arguments[0].startswith(self.cfgJson["cmd"]):
@@ -69,7 +98,6 @@ class IRCMachine(irc.bot.SingleServerIRCBot):
                 return
         
             #cmdArray[0] : command
-            #cmdArray[>0] : arg
             if isPriv:
                 stLog("INFO","User "+e.source.nick+" sent command '"+cmdArray[0]+"' in private.")
             else:
@@ -92,6 +120,7 @@ def main():
             global quiet
             quiet = True
         elif i == "-c":
+            #TODO : rewrite this horror
             if not "ircmachine.json" in sys.argv[sys.argv.index(i)+1] and not os.path.isfile(sys.argv[sys.argv.index(i)+1]+"/ircmachine.json"):
                 print("FATAL : The specified config file does not exists.")
                 sys.exit(1)
@@ -103,10 +132,15 @@ def main():
     try:
         stLog("INFO","Parsing config file...")
         with open(cfgPath,"r") as file:
-            cfgJson = json.load(file)
+            try:
+                cfgJson = json.load(file)
+            except:
+                stLog("FATAL","Config file is malformed. Aborting.")
+                sys.exit(1)
         stLog("INFO","Config parsed.")
     except IOError:
         stLog("FATAL","No config file in '"+cfgPath+"'. Aborting.")
+        sys.exit(1)
         
     for i in importantCFG:
         if not i in cfgJson:
@@ -143,4 +177,4 @@ try:
         main()
 except KeyboardInterrupt: #^C
     stLog("FATAL","Force shutdown by operator.")
-    
+    sys.exit(1)
